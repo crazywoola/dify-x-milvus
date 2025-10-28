@@ -17,7 +17,7 @@ RAG 的演进之路：从“状态”到“记忆” — Dify × Milvus
      ```
 
 快捷键
-- 主题切换：在幻灯片页面按键 `1`（Swiss）/ `2`（Atelier）/ `3`（Night）
+- 主题切换：在幻灯片页面按键 `1`（Swiss）/ `2`（Atelier）/ `3`（Ukiyo）
 - 演讲者备注：按 `s` 打开 Presenter Notes
 
 项目结构
@@ -41,4 +41,3 @@ RAG 的演进之路：从“状态”到“记忆” — Dify × Milvus
 
 许可
 - 幻灯片结构与代码开源；Logo 与品牌元素归 Dify 所有，请在品牌规范内使用。
-
