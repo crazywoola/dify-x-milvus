@@ -31,8 +31,15 @@ code, pre, .mono{
 .reveal p,.reveal li{font-size:34px;line-height:1.32}
 .reveal a{color:var(--dify-blue);text-decoration:none;border-bottom:1px solid rgba(0,51,255,.25)}
 .reveal strong{color:#111}
+.emph{color:var(--dify-blue);font-weight:800}
+mark{background:rgba(0,51,255,.12);color:inherit; padding:.05em .25em;border-radius:.2em}
+.hl{background:linear-gradient(transparent 60%, rgba(0,51,255,.18) 0);}
 .reveal ul{margin:.6em 0 0 1.1em}
 .reveal li+li{margin-top:.24em}
+
+/* Accent bullets (where supported) */
+.reveal ul{list-style:disc}
+.reveal ul li::marker{color:var(--dify-blue)}
 
 .brand{position:fixed;top:22px;left:28px;z-index:9;opacity:.92}
 .brand img{height:34px}
@@ -51,3 +58,13 @@ code, pre, .mono{
 /* Theme indicator styling moved to HTML inline for speed; kept class hook here if needed */
 #theme-indicator{backdrop-filter:saturate(140%) blur(6px)}
 
+/* Background random shapes */
+#bg-shapes{position:fixed;inset:0;pointer-events:none;z-index:0;overflow:hidden}
+#bg-shapes .shape{position:absolute;filter:blur(28px) saturate(115%);opacity:.12;transform:translate3d(0,0,0)}
+#bg-shapes .shape.s1{background:radial-gradient(closest-side, rgba(0,51,255,.5), transparent 70%)}
+#bg-shapes .shape.s2{background:conic-gradient(from 90deg, rgba(0,51,255,.35), transparent 45%, rgba(0,51,255,.15))}
+#bg-shapes .shape.s3{background:radial-gradient(closest-side, rgba(0,51,255,.32), transparent 65%)}
+
+/* Closing slide helpers */
+.centered{display:flex;min-height:60vh;align-items:center;justify-content:center;flex-direction:column;text-align:center;gap:18px}
+.logo-large{height:100px}
