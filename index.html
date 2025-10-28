@@ -1,767 +1,378 @@
-<!doctype html>
+<!DOCTYPE html>
 <html lang="zh-CN">
-<head>
-  <meta charset="utf-8">
-  <title>RAG is Dead? 从检索到智能的 30 分钟复盘</title>
-  <meta name="viewport" content="width=device-width, initial-scale=1.0">
-  <link rel="stylesheet" href="https://cdn.jsdelivr.net/npm/reveal.js@5/dist/reveal.css">
-  <link rel="stylesheet" href="https://cdn.jsdelivr.net/npm/reveal.js@5/dist/theme/white.css" id="theme">
-  <style>
-    :root {
-      --brand-primary: #0033ff;
-      --brand-secondary: #6a7dff;
-      --brand-accent: #00c2ff;
-      --brand-dark: #0a1133;
-      --brand-muted: #7a88ad;
-      --brand-light: #eef2ff;
-      --card-bg: rgba(255, 255, 255, 0.92);
-    }
-
-    body {
-      font-family: "Inter", "HarmonyOS Sans", "Noto Sans SC", "Microsoft YaHei", sans-serif;
-      background: linear-gradient(135deg, #f6f8ff 0%, #e5ecff 100%);
-      color: var(--brand-dark);
-      overflow-x: hidden;
-    }
-
-    body::before,
-    body::after {
-      content: "";
-      position: fixed;
-      width: 520px;
-      height: 520px;
-      border-radius: 50%;
-      z-index: -2;
-      filter: blur(10px);
-    }
-
-    body::before {
-      top: -160px;
-      right: -120px;
-      background: radial-gradient(circle at center, rgba(0, 51, 255, 0.24) 0%, rgba(0, 51, 255, 0) 70%);
-    }
-
-    body::after {
-      bottom: -220px;
-      left: -140px;
-      background: radial-gradient(circle at center, rgba(0, 194, 255, 0.22) 0%, rgba(0, 194, 255, 0) 70%);
-    }
-
-    .reveal {
-      color: var(--brand-dark);
-    }
-
-    .reveal section {
-      position: relative;
-    }
-
-    .has-halo::before {
-      content: "";
-      position: absolute;
-      width: 380px;
-      height: 380px;
-      border-radius: 50%;
-      background: radial-gradient(circle at center, rgba(0, 51, 255, 0.16) 0%, rgba(0, 51, 255, 0) 70%);
-      top: -120px;
-      right: -80px;
-      z-index: -1;
-      filter: blur(2px);
-    }
-
-    .reveal h1,
-    .reveal h2,
-    .reveal h3 {
-      font-weight: 700;
-      letter-spacing: 0.01em;
-    }
-
-    .reveal h1 {
-      font-size: 2.75rem;
-      line-height: 1.18;
-    }
-
-    .reveal h2 {
-      font-size: 2.3rem;
-      line-height: 1.24;
-      margin-bottom: 1rem;
-    }
-
-    .reveal h3 {
-      font-size: 1.6rem;
-      margin-bottom: 0.8rem;
-    }
-
-    .brand-dify {
-      display: inline-flex;
-      align-items: baseline;
-      gap: 0.05em;
-      font-weight: 700;
-      letter-spacing: 0.02em;
-    }
-
-    .brand-dify .dy {
-      color: var(--brand-dark);
-    }
-
-    .brand-dify .if {
-      color: var(--brand-primary);
-    }
-
-    .title-card {
-      background: linear-gradient(130deg, rgba(10, 17, 51, 0.92) 0%, rgba(0, 51, 255, 0.92) 55%, rgba(0, 194, 255, 0.88) 100%);
-      padding: 3.4rem;
-      border-radius: 2.1rem;
-      backdrop-filter: blur(12px);
-      color: #fff;
-      box-shadow: 0 36px 80px rgba(0, 51, 255, 0.28);
-      position: relative;
-      overflow: hidden;
-    }
-
-    .title-card::after {
-      content: "";
-      position: absolute;
-      inset: 0;
-      background: radial-gradient(circle at 80% 25%, rgba(255, 255, 255, 0.28) 0%, rgba(255, 255, 255, 0) 55%);
-      pointer-events: none;
-    }
-
-    .title-card h1 {
-      margin-bottom: 1.3rem;
-      color: #fff;
-    }
-
-    .title-card .subtitle {
-      font-size: 1.35rem;
-      color: rgba(255, 255, 255, 0.85);
-      margin-bottom: 1rem;
-    }
-
-    .title-card .speaker {
-      font-size: 1.15rem;
-      font-weight: 600;
-    }
-
-    .title-card .meta {
-      font-size: 0.95rem;
-      color: rgba(255, 255, 255, 0.72);
-      margin-top: 1.2rem;
-    }
-
-    .pill-list {
-      display: grid;
-      grid-template-columns: repeat(auto-fit, minmax(280px, 1fr));
-      gap: 1.2rem;
-    }
-
-    .pill {
-      background: var(--card-bg);
-      padding: 1.35rem 1.5rem;
-      border-radius: 1.4rem;
-      border: 1px solid rgba(0, 51, 255, 0.12);
-      box-shadow: 0 26px 55px rgba(0, 51, 255, 0.09);
-    }
-
-    .pill strong {
-      display: block;
-      font-size: 1.12rem;
-      color: var(--brand-primary);
-      margin-bottom: 0.45rem;
-    }
-
-    .pill span {
-      font-size: 0.96rem;
-      line-height: 1.55;
-      color: var(--brand-dark);
-    }
-
-    .reveal ul {
-      list-style: none;
-      padding: 0;
-    }
-
-    .reveal ul li {
-      position: relative;
-      padding-left: 1.85rem;
-      margin: 0.6rem 0;
-      font-size: 1.05rem;
-      line-height: 1.64;
-    }
-
-    .reveal ul li::before {
-      content: "";
-      width: 0.68rem;
-      height: 0.68rem;
-      border-radius: 30% 70% 65% 35%;
-      background: linear-gradient(135deg, var(--brand-primary), var(--brand-accent));
-      position: absolute;
-      left: 0;
-      top: 0.52rem;
-      box-shadow: 0 10px 22px rgba(0, 51, 255, 0.2);
-    }
-
-    .reveal ol {
-      counter-reset: item;
-      padding-left: 0;
-    }
-
-    .reveal ol li {
-      counter-increment: item;
-      margin: 0.65rem 0;
-      padding-left: 2.4rem;
-      font-size: 1.05rem;
-      line-height: 1.6;
-      position: relative;
-    }
-
-    .reveal ol li::before {
-      content: counter(item, decimal-leading-zero);
-      position: absolute;
-      left: 0;
-      top: 0.05rem;
-      background: linear-gradient(135deg, var(--brand-primary), var(--brand-secondary));
-      color: #fff;
-      font-size: 0.85rem;
-      font-weight: 600;
-      padding: 0.3rem 0.68rem;
-      border-radius: 1.1rem;
-      box-shadow: 0 16px 32px rgba(0, 51, 255, 0.2);
-    }
-
-    .section-tag {
-      display: inline-flex;
-      align-items: center;
-      gap: 0.4rem;
-      padding: 0.35rem 0.9rem;
-      border-radius: 999px;
-      background: rgba(0, 51, 255, 0.12);
-      color: var(--brand-primary);
-      font-size: 0.82rem;
-      letter-spacing: 0.08em;
-      text-transform: uppercase;
-      margin-bottom: 0.85rem;
-    }
-
-    .cards {
-      display: grid;
-      grid-template-columns: repeat(auto-fit, minmax(240px, 1fr));
-      gap: 1.2rem;
-    }
-
-    .card {
-      background: var(--card-bg);
-      border-radius: 1.45rem;
-      padding: 1.55rem;
-      border: 1px solid rgba(122, 136, 173, 0.22);
-      box-shadow: 0 28px 60px rgba(0, 51, 255, 0.1);
-    }
-
-    .card h3 {
-      color: var(--brand-primary);
-    }
-
-    .card p {
-      font-size: 0.97rem;
-      color: var(--brand-dark);
-      line-height: 1.55;
-    }
-
-    .lead {
-      font-size: 1.28rem;
-      line-height: 1.72;
-      color: var(--brand-dark);
-    }
-
-    .callout {
-      border-left: 4px solid var(--brand-primary);
-      padding-left: 1.15rem;
-      margin-top: 1.2rem;
-      color: var(--brand-dark);
-      font-size: 1rem;
-    }
-
-    .layout-split {
-      display: grid;
-      grid-template-columns: minmax(0, 1.1fr) minmax(0, 0.9fr);
-      gap: 2.5rem;
-      align-items: center;
-    }
-
-    .layout-split .split-panel {
-      background: var(--card-bg);
-      border-radius: 1.6rem;
-      padding: 1.9rem;
-      border: 1px solid rgba(0, 51, 255, 0.12);
-      box-shadow: 0 28px 64px rgba(0, 51, 255, 0.12);
-    }
-
-    .gradient-panel {
-      background: linear-gradient(140deg, rgba(0, 51, 255, 0.14), rgba(0, 194, 255, 0.25));
-      border-radius: 1.9rem;
-      padding: 2.3rem;
-      position: relative;
-      overflow: hidden;
-    }
-
-    .gradient-panel::after {
-      content: "";
-      position: absolute;
-      inset: 14%;
-      border-radius: 35% 65% 60% 40%;
-      background: radial-gradient(circle at 30% 30%, rgba(0, 51, 255, 0.16), rgba(0, 51, 255, 0));
-      transform: rotate(8deg);
-    }
-
-    .gradient-panel > * {
-      position: relative;
-      z-index: 1;
-    }
-
-    .highlight-badge {
-      display: inline-flex;
-      align-items: center;
-      gap: 0.5rem;
-      padding: 0.4rem 0.95rem;
-      border-radius: 999px;
-      background: #fff;
-      color: var(--brand-primary);
-      font-weight: 600;
-      font-size: 0.82rem;
-      text-transform: uppercase;
-      letter-spacing: 0.08em;
-      box-shadow: 0 16px 34px rgba(0, 51, 255, 0.18);
-    }
-
-    .stacked-list {
-      display: grid;
-      gap: 1.1rem;
-      margin-top: 1.4rem;
-    }
-
-    .stacked-card {
-      background: rgba(255, 255, 255, 0.94);
-      border-radius: 1.45rem;
-      padding: 1.45rem 1.55rem;
-      border: 1px solid rgba(208, 213, 255, 0.4);
-      box-shadow: 0 24px 58px rgba(0, 51, 255, 0.12);
-    }
-
-    .reveal section[data-background-gradient] h1,
-    .reveal section[data-background-gradient] h2,
-    .reveal section[data-background-gradient] h3,
-    .reveal section[data-background-gradient] p,
-    .reveal section[data-background-gradient] ul li,
-    .reveal section[data-background-gradient] strong {
-      color: #fff;
-    }
-
-    .reveal section[data-background-gradient] .card,
-    .reveal section[data-background-gradient] .pill,
-    .reveal section[data-background-gradient] .split-panel,
-    .reveal section[data-background-gradient] .stacked-card {
-      background: rgba(12, 18, 45, 0.46);
-      border-color: rgba(255, 255, 255, 0.14);
-      box-shadow: none;
-    }
-
-    .reveal .footer-note {
-      margin-top: 1.5rem;
-      font-size: 0.85rem;
-      color: var(--brand-muted);
-    }
-
-    .contact-lines span {
-      display: block;
-    }
-
-    .contact-lines span + span {
-      margin-top: 0.45rem;
-    }
-  </style>
-</head>
-<body>
-  <div class="reveal">
-    <div class="slides">
-      <section data-background-gradient="linear-gradient(135deg, #0b1f43, #1b35ff)">
-        <div class="title-card">
-          <h1>RAG is Dead? 从检索到智能的 30 分钟复盘</h1>
-          <p class="subtitle"><span class="brand-dify"><span class="dy">D</span><span class="if">if</span><span class="dy">y</span></span> 企业级上下文工程方法论</p>
-          <p class="speaker">郑立 · <span class="brand-dify"><span class="dy">D</span><span class="if">if</span><span class="dy">y</span></span> 开源生态负责人</p>
-          <p class="meta">AI Infra &amp; Application Meetup · 2024</p>
-        </div>
-        <aside class="notes">
-          欢迎语，点出“RAG is Dead?” 的话题热度，说明今天将以 30 分钟梳理企业级 RAG 的真实演进，并结合 Dify 的实践视角。
-          简要介绍自己是郑立，负责 Dify 的开源生态，给听众建立信任。
-        </aside>
-      </section>
-
-      <section class="has-halo">
-        <div class="layout-split">
-          <div>
-            <span class="section-tag">Session Goals</span>
-            <h2>今天我们要回答的三个问题</h2>
-            <div class="pill-list">
-              <div class="pill">
-                <strong>为什么大家说“RAG 死了”？</strong>
-                <span>厘清企业在真实场景里的落地痛点，辨析情绪背后的结构性问题。</span>
-              </div>
-              <div class="pill">
-                <strong>RAG 的价值还剩下什么？</strong>
-                <span>回到检索增强生成的本质，提炼对业务仍然关键的能力。</span>
-              </div>
-              <div class="pill">
-                <strong>下一代方案长什么样？</strong>
-                <span>介绍上下文工程与 Agentic RAG 的组合拳，以及如何用 <span class="brand-dify"><span class="dy">D</span><span class="if">if</span><span class="dy">y</span></span> 快速实现。</span>
-              </div>
+  <head>
+    <meta charset="utf-8" />
+    <meta name="viewport" content="width=device-width, initial-scale=1" />
+    <title>RAG 的演进之路：从“状态”到“记忆” — Dify × Milvus</title>
+    <!-- Reveal.js core -->
+    <link rel="stylesheet" href="https://cdn.jsdelivr.net/npm/reveal.js@5/dist/reveal.css" />
+    <link rel="stylesheet" href="https://cdn.jsdelivr.net/npm/reveal.js@5/dist/theme/white.css" id="reveal-theme" />
+    <!-- Fonts -->
+    <link rel="preconnect" href="https://cdn.jsdelivr.net" crossorigin />
+    <link rel="stylesheet" href="https://cdn.jsdelivr.net/npm/misans@4.1.0/lib/Normal/MiSans-Regular.min.css" crossorigin="anonymous" />
+    <link rel="stylesheet" href="https://cdn.jsdelivr.net/npm/misans@4.1.0/lib/Normal/MiSans-Medium.min.css" crossorigin="anonymous" />
+    <link rel="stylesheet" href="https://cdn.jsdelivr.net/npm/misans@4.1.0/lib/Normal/MiSans-Bold.min.css" crossorigin="anonymous" />
+    <!-- Custom Dify theme overrides -->
+    <link rel="stylesheet" href="assets/dify-theme.css" />
+  </head>
+  <body>
+    <div class="reveal dify-deck">
+      <div class="slides">
+        <!-- 1. Title -->
+        <section data-background="" data-auto-animate class="intro full-bleed">
+          <div class="intro-inner">
+            <figure class="brand-lockup">
+              <img src="assets/dify-design-kit/co-branding/co-branding.svg" alt="Dify × Milvus 联合分享" loading="lazy" />
+            </figure>
+            <h1 class="headline" data-id="title">RAG 的演进之路：从“状态”到“记忆”</h1>
+            <p class="subtitle">Dify × Milvus 联合技术分享</p>
+            <div class="meta">
+              <div class="speaker">演讲者：郑立 @ Dify 开源生态负责人</div>
+              <div class="event">Unstructured Data Meetup · 30 分钟</div>
             </div>
           </div>
-          <div class="gradient-panel">
-            <span class="highlight-badge">30 MIN FLOW</span>
-            <div class="stacked-list">
-              <div class="stacked-card">
-                <strong>00′-05′ Reset</strong>
-                <p>拆解“RAG 死了”的真实原因，替代情绪化判断。</p>
-              </div>
-              <div class="stacked-card">
-                <strong>05′-18′ Rebuild</strong>
-                <p>以上下文工程框架梳理 RAG 能力栈，找到可操作抓手。</p>
-              </div>
-              <div class="stacked-card">
-                <strong>18′-30′ Reimagine</strong>
-                <p>展示 <span class="brand-dify"><span class="dy">D</span><span class="if">if</span><span class="dy">y</span></span> 编排案例与进阶路线，帮助团队落地。</p>
-              </div>
+          <aside class="notes">
+            开场 1 分钟：自我介绍，说明本次联合分享背景和目标。
+            强调主题：RAG 的核心价值不是“检索”，而是为 LLM 构建可管理的“记忆”。
+          </aside>
+        </section>
+
+        <!-- 2. Who / Why -->
+        <section data-auto-animate>
+          <h2>这 30 分钟，适合谁？</h2>
+          <div class="two-cols">
+            <div>
+              <ul>
+                <li class="fragment">AI 工程师 / LLM 应用开发者</li>
+                <li class="fragment">数据科学家与算法工程师</li>
+                <li class="fragment">数据平台 / 基建工程师</li>
+                <li class="fragment">AI 产品经理 / 技术负责人</li>
+              </ul>
+            </div>
+            <div>
+              <p class="dim">你将获得：</p>
+              <ul>
+                <li class="fragment">一套从“状态到记忆”的 RAG 方法论</li>
+                <li class="fragment">可复用的知识管道与评估清单</li>
+                <li class="fragment">Dify × Milvus 的实战组合范式</li>
+              </ul>
             </div>
           </div>
-        </div>
-        <aside class="notes">
-          概述议程，用三个问题打结构：痛点、价值、实践。
-          在右侧补充 30 分钟的节奏拆分，让听众对分享路径一目了然。
-        </aside>
-      </section>
+          <aside class="notes">
+            1 分钟：基于目标受众澄清收益点，与 meetup 的主题对齐。
+          </aside>
+        </section>
 
-      <section>
-        <span class="section-tag">Audience Fit</span>
-        <h2>面向谁：AI 产品与数据平台的双线负责人</h2>
-        <ul>
-          <li>需要让 LLM 接入企业知识却被“幻觉”与合规卡住的产品 Owner。</li>
-          <li>负责知识库、数据中台与检索系统的工程团队与架构师。</li>
-          <li>在评估开源/自建与商用 API 组合拳的 CTO、技术合伙人。</li>
-        </ul>
-        <div class="callout">核心目标：降低线上灰度风险，提升 ROI，同时保持团队可控的定义权。</div>
-        <aside class="notes">
-          交代受众画像，呼应原始文章针对业务技术双角色的定位。
-          强调这份材料帮助他们做方案评估与路线图决策。
-        </aside>
-      </section>
+        <!-- 3. Key Takeaways -->
+        <section data-auto-animate>
+          <h2>要点先知（Key Takeaways）</h2>
+          <p class="punch">别“交付 <strong>RAG</strong>”，要交付可运营的<strong>检索与记忆</strong>。</p>
+          <ul>
+            <li class="fragment">RAG 的终局：把“状态”运营成可被 Agent 主动使用的“记忆”</li>
+            <li class="fragment">质量上限来自“知识管道”，不是检索模型本身</li>
+            <li class="fragment">Dify 管道 × Milvus 底座：端到端记忆构建与使用</li>
+          </ul>
+          <aside class="notes">
+            1 分钟：概述三大要点，提供听众期待框架。
+          </aside>
+        </section>
 
-      <section class="has-halo">
-        <div class="layout-split">
-          <div>
-            <span class="section-tag">Pulse Check</span>
-            <h2>“RAG 死了”的三种声音</h2>
-            <ul>
-              <li>检索命中率不稳定，内容不相关导致体验崩塌。</li>
-              <li>长上下文成本激增，效果仍难超过针对性微调。</li>
-              <li>评估体系缺失，无法向业务方证明提升了什么。</li>
-            </ul>
-            <div class="callout">共识：朴素 RAG 模式在复杂场景中难以满足可控、可追溯、可优化的要求。</div>
-          </div>
-          <div class="split-panel">
-            <h3>隐性成本雷达</h3>
-            <div class="stacked-list">
-              <div class="stacked-card">
-                <strong>延迟</strong>
-                <p>上线迭代周期拉长 3×，团队把时间花在手工修正问答样本。</p>
-              </div>
-              <div class="stacked-card">
-                <strong>信任</strong>
-                <p>业务部门失去信心，回退到人工 FAQ，AI 团队资源投入被削减。</p>
-              </div>
-              <div class="stacked-card">
-                <strong>数据资产</strong>
-                <p>知识库缺乏版本与回放，导致经验无法沉淀，复用率低。</p>
-              </div>
+        <!-- 4. Value of RAG as Memory -->
+        <section data-auto-animate>
+          <h2>RAG 的真正价值：为 LLM 构建“记忆”</h2>
+          <div class="two-cols">
+            <div>
+              <p>LLM 擅长“计算 (Compute)”，参数内知识是静态的。</p>
+              <p>RAG 是给 LLM 挂载一个外部、动态的 <strong>记忆 (Memory)</strong>。</p>
+              <p class="dim">“RAG 是一个谱系 (Spectrum)”，从简单到复杂逐步演进。</p>
+              <p class="punch">LLMs 能读；请给它<strong>干净的上下文</strong>。</p>
+            </div>
+            <div class="diagram memory-bus">
+              <div class="box">LLM 大脑<br><span class="dim">（静态知识）</span></div>
+              <div class="bus">RAG 总线</div>
+              <div class="box">外部记忆体<br><span class="dim">（动态知识）</span></div>
             </div>
           </div>
-        </div>
-        <aside class="notes">
-          用调研得到的三类抱怨引出问题本质，指出大家口中的“死亡”其实是对朴素流水线的不满。
-          右侧展示隐形成本，提醒听众关注背后资源浪费和信任赤字。
-        </aside>
-      </section>
+          <aside class="notes">
+            2 分钟：强调“记忆 vs 计算”，用总线隐喻帮助建立直觉。
+          </aside>
+        </section>
 
-      <section>
-        <span class="section-tag">LLM Reality</span>
-        <h2>大模型的结构性约束仍然存在</h2>
-        <ul>
-          <li>知识截止：参数化知识无法覆盖最新、专有、实时信息。</li>
-          <li>幻觉风险：概率生成天性让模型在缺乏证据时编造答案。</li>
-          <li>领域深度：通用语料训练的模型对企业内部语境理解有限。</li>
-          <li>可验证性：缺乏来源引用，审计链路缺失。</li>
-        </ul>
-        <aside class="notes">
-          引用 context 的 1.1 节内容，强调没有外部上下文补强，大模型在企业级场景仍不够用。
-          铺垫 RAG 作为“现实锚点”的必要性。
-        </aside>
-      </section>
+        <!-- 5. Spectrum / Agenda -->
+        <section data-auto-animate>
+          <h2>RAG 演进谱系</h2>
+          <div class="agenda-grid">
+            <div class="agenda-item">Naive RAG<br><span class="dim">从 0 到 1 的“状态”</span></div>
+            <div class="agenda-item">Advanced RAG<br><span class="dim">运营“状态”的质量</span></div>
+            <div class="agenda-item">Agentic RAG<br><span class="dim">“记忆”进入 Agent</span></div>
+            <div class="agenda-item">Knowledge Pipeline<br><span class="dim">高质量记忆的生产线</span></div>
+          </div>
+          <aside class="notes">
+            1 分钟：交代结构与演进顺序，方便后续定位。
+          </aside>
+        </section>
 
-      <section>
-        <span class="section-tag">Value Lens</span>
-        <h2>RAG 仍是企业级 AI 的基础设施</h2>
-        <div class="cards">
-          <div class="card">
-            <h3>准确性 &amp; 可信任</h3>
-            <p>让回答锚定真实文档，显著降低幻觉，提供可审计的引用链路。</p>
+        <!-- 6. Naive RAG -->
+        <section data-auto-animate>
+          <h2>阶段一：Naive RAG（简单“状态”检索）</h2>
+          <div class="two-cols">
+            <div>
+              <p class="dim">架构</p>
+              <p>Query → Embedding → 向量检索（Milvus）→ Chunks → LLM</p>
+              <p class="dim">存在问题</p>
+              <ul>
+                <li class="fragment">语义割裂：固定切片导致上下文断裂</li>
+                <li class="fragment">检索噪音：次相关内容占位</li>
+                <li class="fragment">大海捞针：关键信息淹没其中</li>
+              </ul>
+            </div>
+            <div class="diagram naive"></div>
           </div>
-          <div class="card">
-            <h3>实时性 &amp; 专有性</h3>
-            <p>即时接入最新公告、票据、运营数据，实现 just-in-time 知识。</p>
-          </div>
-          <div class="card">
-            <h3>成本效率</h3>
-            <p>更新知识库远比重新训练/微调模型更廉价，部署风险更小。</p>
-          </div>
-          <div class="card">
-            <h3>个性化扩展</h3>
-            <p>通过多库路由适配不同业务线，实现高度定制化的智能助手。</p>
-          </div>
-        </div>
-        <aside class="notes">
-          概括 1.3 节的价值主张，说明 RAG 依旧是企业级智能的底座。
-          强调对话仍然聚焦 ROI，而不是情绪化的“死”。
-        </aside>
-      </section>
+          <aside class="notes">
+            2 分钟：定义 Naive RAG 的可用性与局限，为改进铺垫。
+          </aside>
+        </section>
 
-      <section data-background-gradient="linear-gradient(135deg, #161036, #5a54ff)">
-        <h2>从 RAG 到上下文工程的范式转移</h2>
-        <p class="lead">我们不再只关注一次性“检索 + 生成”，而是构建一条可观测、可编排的上下文供应链。</p>
-        <ul>
-          <li>数据 → 检索 → 推理 → 运维的闭环设计。</li>
-          <li>关注点从“提示词技巧”转为“上下文治理”。</li>
-          <li>让知识库、工具、代理协同演化，持续提升质量。</li>
-        </ul>
-        <aside class="notes">
-          总结 context 第七部分提出的范式转移概念，呼应“上下文工程”。
-          作为后续各个模块的过渡。
-        </aside>
-      </section>
+        <!-- 7. Advanced RAG - Parent/Child & Rerank -->
+        <section data-auto-animate>
+          <h2>阶段二：Advanced RAG（提升“状态”质量）</h2>
+          <div class="two-cols">
+            <div>
+              <p class="dim">关键实践 1</p>
+              <p><strong>父子文档检索 (Parent–Child Retrieval)</strong></p>
+              <p>命中“子块”时携带“父块”上下文，兼顾精度与语境完整性。</p>
+              <p class="dim">关键实践 2</p>
+              <p><strong>Reranking 重排序</strong>：粗召回 → 精排，降低噪音。</p>
+            </div>
+            <div class="diagram parent-child"></div>
+          </div>
+          <aside class="notes">
+            2 分钟：说明两个抓手如何同时缓解割裂与噪音问题。
+          </aside>
+        </section>
 
-      <section>
-        <span class="section-tag">Context Supply</span>
-        <h2>第一步：打磨数据管道与分块策略</h2>
-        <div class="cards">
-          <div class="card">
-            <h3>流程治理</h3>
-            <p>建立采集、清洗、结构化、版本控制的流水线，保证最新且可信的知识来源。</p>
-          </div>
-          <div class="card">
-            <h3>分块策略矩阵</h3>
-            <p>固定大小、递归、结构化、语义分块各有权衡，根据文档类型与召回需求调优。</p>
-          </div>
-          <div class="card">
-            <h3>质量评估</h3>
-            <p>针对数据异味建立校验：覆盖率、重复率、噪声密度、敏感信息过滤。</p>
-          </div>
-        </div>
-        <aside class="notes">
-          来源于 context 第三部分的分块策略和数据治理章节，强调上下游协作与自动化。
-        </aside>
-      </section>
+        <!-- 8. Advanced RAG toolbox (reorg for audience) -->
+        <section data-auto-animate>
+          <h2>质量提升工具箱（面向实战）</h2>
+          <ul>
+            <li class="fragment">混合召回（Hybrid）：向量 + 词法/正则 + 过滤</li>
+            <li class="fragment">精排优先：组装上下文前，务必 <strong>Re-rank</strong></li>
+            <li class="fragment">智能分块：语义/标题感知 + 父子结构</li>
+            <li class="fragment">上下文工程：去重合并、多样化来源、硬性 token 上限</li>
+            <li class="fragment">查询重写：模糊/复合意图标准化</li>
+          </ul>
+          <aside class="notes">
+            2 分钟：从工程视角给到落地清单，结合“先精排，后组装”“混合召回”的做法。
+          </aside>
+        </section>
 
-      <section>
-        <span class="section-tag">Retrieval Core</span>
-        <h2>第二步：检索心脏 = 嵌入模型 × 向量数据库</h2>
-        <ul>
-          <li>MTEB 只是起点，必须结合自有数据集离线评估，关注召回率与延迟。</li>
-          <li>维度、窗口、推理延迟在准确性与成本之间权衡；API 与自部署决定合规边界。</li>
-          <li>Milvus/HNSW/IVF 等索引组合，实现高吞吐低延迟的近似最近邻搜索。</li>
-          <li>结合元数据过滤与多路召回，提升复杂问答一致性。</li>
-        </ul>
-        <aside class="notes">
-          引用 context 3.2 的嵌入模型与向量数据库内容，提醒听众要建立自己的评估集合。
-          说明选择模型、索引的考量维度。
-        </aside>
-      </section>
+        <!-- 8.1 The 5 Retrieval Tips (from interview) -->
+        <section data-auto-animate>
+          <h2>Retrieval 作战手册：5 条铁律</h2>
+          <ul>
+            <li class="fragment"><strong>别交付 RAG，交付检索</strong>：命名清楚原语（稠密/稀疏、过滤、重排、组装、评估）。</li>
+            <li class="fragment"><strong>第一跳赢在混合召回</strong>：200–300 候选足矣，LLM 读得动。</li>
+            <li class="fragment"><strong>先重排，后组装</strong>：总是在拼上下文之前做 Re-rank。</li>
+            <li class="fragment"><strong>尊重上下文腐烂</strong>：紧凑、结构化胜于最大窗口。</li>
+            <li class="fragment"><strong>一晚 + 披萨 = 金标集</strong>：小 Gold Set 接入 CI/看板。</li>
+          </ul>
+          <aside class="notes">
+            2–3 分钟：逐条讲解，突出“混合召回、重排优先、上下文工程、评估闭环”。
+          </aside>
+        </section>
 
-      <section>
-        <span class="section-tag">Quality Loop</span>
-        <h2>第三步：用重排与评估闭环守住体验</h2>
-        <div class="cards">
-          <div class="card">
-            <h3>多阶段检索</h3>
-            <p>BM25 + 语义检索组合，借助重排模型（如 Cohere ReRank）提高精准度。</p>
-          </div>
-          <div class="card">
-            <h3>自动化评估</h3>
-            <p>围绕真实性、相关性、完整性构建 LLM 评估 + 人审混合体系，记录指标趋势。</p>
-          </div>
-          <div class="card">
-            <h3>可观测性</h3>
-            <p>采集检索命中率、响应延迟、成本，触发回归测试与知识库更新。</p>
-          </div>
-        </div>
-        <aside class="notes">
-          汇总 context 第四部分对高级 RAG 的讨论，强调评估和可观测性的重要性。
-        </aside>
-      </section>
-
-      <section>
-        <span class="section-tag">Beyond Naive</span>
-        <h2>演进路线：自适应、纠正型与代理式 RAG</h2>
-        <div class="cards">
-          <div class="card">
-            <h3>Self-RAG</h3>
-            <p>模型自我反思词元，按需检索并评估证据支撑度，提升事实性。</p>
-          </div>
-          <div class="card">
-            <h3>CRAG</h3>
-            <p>为检索结果打分，低质量时触发网络搜索等补救路径，保证召回覆盖。</p>
-          </div>
-          <div class="card">
-            <h3>Agentic RAG</h3>
-            <p>引入代理规划与工具调用，拆解多跳任务，实现可编排的知识工作流。</p>
-          </div>
-        </div>
-        <aside class="notes">
-          引用 context 4.2-4.4 的内容，用三个代表型模式说明“RAG 并未死亡，而是在升级”。
-        </aside>
-      </section>
-
-      <section class="has-halo">
-        <div class="layout-split">
-          <div>
-            <span class="section-tag">Case Study</span>
-            <h2>运营团队如何用 <span class="brand-dify"><span class="dy">D</span><span class="if">if</span><span class="dy">y</span></span> 重构知识工作</h2>
-            <ul>
-              <li>统一客服、售后、运营知识库，实现多渠道问答一致性。</li>
-              <li>利用代理式 RAG 自动判定召回质量，触发外部搜索兜底。</li>
-              <li>结合 Langfuse 观测，每周复盘幻觉案例并反哺数据治理。</li>
-            </ul>
-          </div>
-          <div class="split-panel">
-            <h3>可量化成果</h3>
-            <div class="stacked-list">
-              <div class="stacked-card">
-                <strong>6 周上线</strong>
-                <p>知识库更新从 5 天缩短到 6 小时，评审流程自动触发。</p>
-              </div>
-              <div class="stacked-card">
-                <strong>准确率 +28%</strong>
-                <p>业务验收问答中，含引用的答案通过率显著提升。</p>
-              </div>
-              <div class="stacked-card">
-                <strong>ROI 可视化</strong>
-                <p>通过话务转人工率下降 18% 证明项目继续投入的价值。</p>
-              </div>
+        <!-- 8.2 Ingest / Query / Outer loop (from interview) -->
+        <section data-auto-animate>
+          <h2>检索系统三段式：Ingest / Query / Outer Loop</h2>
+          <p class="punch">赢在<strong>第一跳</strong>，稳在<strong>外环</strong>。</p>
+          <div class="two-cols">
+            <div>
+              <p class="dim">Ingest</p>
+              <ul>
+                <li>解析 + 分块：域感知（标题、代码、表格）</li>
+                <li>富化：标题、锚点、符号、元数据</li>
+                <li>可选：LLM “块摘要”；Embeddings（稠密）+ 稀疏信号</li>
+                <li>写入 DB：文本、向量、元数据</li>
+              </ul>
+            </div>
+            <div>
+              <p class="dim">Query → Outer loop</p>
+              <ul>
+                <li>第一阶段混合：向量 + 词法/正则 + 元数据过滤</li>
+                <li>候选池：~100–300；重排至 Top 20–40</li>
+                <li>上下文组装：系统提示优先、去重/合并、多样化、token 硬上限</li>
+                <li>外环：缓存/成本护栏，Gold Set 基准，错因分析与再分块</li>
+                <li>记忆/压缩：交互轨迹 → 可检索事实</li>
+              </ul>
             </div>
           </div>
-        </div>
-        <aside class="notes">
-          结合一个虚拟化的运营团队案例，展示上下文工程在真实组织中的落地手法与成效指标。
-          强调时间、准确率、ROI 三个维度帮助争取预算。
-        </aside>
-      </section>
+          <aside class="notes">
+            2–3 分钟：把流程串起来，链接到 Dify 知识管道与评估能力。
+          </aside>
+        </section>
 
-      <section data-background-gradient="linear-gradient(135deg, #031042, #0033ff)">
-        <div class="layout-split">
-          <div>
-            <span class="section-tag">Action Plan</span>
-            <h2>30 天落地行动清单</h2>
-            <span class="highlight-badge">Sprint Mode</span>
-            <p class="lead">把上下文工程拆成四个 Sprint，每一步都有明确交付物与评估标准。</p>
+        <!-- 9. Agentic RAG -->
+        <section data-auto-animate>
+          <h2>阶段三：Agentic RAG（从“状态”到“记忆”）</h2>
+          <div class="two-cols">
+            <div>
+              <ul>
+                <li class="fragment">意图识别 & 查询重写：先想清楚，再发问</li>
+                <li class="fragment">多步推理 & 循环检索：带反思的迭代</li>
+                <li class="fragment">RAG 成为可编排的 Tool，参与规划与决策</li>
+              </ul>
+              <p class="dim">Dify Agent 将“记忆”纳入行动循环。</p>
+            </div>
+            <div class="diagram agent-loop"></div>
           </div>
-          <div class="stacked-list">
-            <div class="stacked-card">
-              <strong>Week 1 · Baseline</strong>
-              <p>梳理业务场景与指标，搭建数据采集与安全分级机制。</p>
+          <aside class="notes">
+            2–3 分钟：强调“主动使用记忆”的范式转变，并引出 Dify 编排能力。
+          </aside>
+        </section>
+
+        <!-- 10. Knowledge Pipeline (foundation) -->
+        <section data-auto-animate>
+          <h2>根基：Knowledge Pipeline（高质量“记忆”的生产线）</h2>
+          <ul>
+            <li class="fragment">GIGO：上限由数据质量决定</li>
+            <li class="fragment">以应用为中心：处理流程与应用开发解耦</li>
+            <li class="fragment">从清洗→分块→Embedding→索引的全链路可观测</li>
+          </ul>
+          <aside class="notes">
+            2 分钟：强调“记忆生产线”理念，为后续多应用复用埋点。
+          </aside>
+        </section>
+
+        <!-- 11. Pipeline benefits: reuse -->
+        <section data-auto-animate>
+          <h2>一次处理，多处使用</h2>
+          <div class="two-cols">
+            <div>
+              <p>底层：一个 Milvus 知识库（如“公司 2024 年财报”）。</p>
+              <p>上层：多个 Dify 应用同时复用：</p>
+              <ul>
+                <li class="fragment">财报分析 Agent</li>
+                <li class="fragment">智能客服</li>
+                <li class="fragment">HR 助手</li>
+              </ul>
             </div>
-            <div class="stacked-card">
-              <strong>Week 2 · Knowledge</strong>
-              <p>完成分块策略实验，对比嵌入模型，建立离线评测集。</p>
+            <div class="diagram reuse"></div>
+          </div>
+          <aside class="notes">
+            1–2 分钟：突出解耦与复用，链接到成本与运维收益。
+          </aside>
+        </section>
+
+        <!-- 12. Dify + Milvus alignment -->
+        <section data-auto-animate>
+          <h2>Dify × Milvus：RAG 演进的最佳搭档</h2>
+          <div class="two-cols">
+            <div>
+              <p class="dim">Milvus：高性能“记忆基座”</p>
+              <ul>
+                <li class="fragment">存储、索引、向量/元数据的高效检索</li>
+                <li class="fragment">稳定、可靠、可扩展</li>
+              </ul>
             </div>
-            <div class="stacked-card">
-              <strong>Week 3 · Pipeline</strong>
-              <p>实现重排、评估、观测闭环，定义告警阈值与回滚策略。</p>
-            </div>
-            <div class="stacked-card">
-              <strong>Week 4 · Agentic</strong>
-              <p>引入代理工具箱与外部搜索兜底，准备上线灰度与复盘节奏。</p>
+            <div>
+              <p class="dim">Dify：智能“记忆与应用中台”</p>
+              <ul>
+                <li class="fragment">Knowledge Pipeline：构建/管理/优化记忆</li>
+                <li class="fragment">Application Engine：Advanced/Agentic RAG 编排</li>
+              </ul>
             </div>
           </div>
-        </div>
-        <aside class="notes">
-          用行动清单回应“如何开始”的问题，四周冲刺让团队有节奏地验证方案并沉淀度量体系。
-        </aside>
-      </section>
+          <aside class="notes">
+            2 分钟：明确分工与协同，帮助技术选型与架构沟通。
+          </aside>
+        </section>
 
-      <section>
-        <span class="section-tag"><span class="brand-dify"><span class="dy">D</span><span class="if">if</span><span class="dy">y</span></span> Blueprint</span>
-        <h2><span class="brand-dify"><span class="dy">D</span><span class="if">if</span><span class="dy">y</span></span> 实战：从知识库到 Agent 的编排</h2>
-        <ol>
-          <li><strong>知识库存储：</strong>上传政策、手册、FAQ，自动处理分块与向量化。</li>
-          <li><strong>画布编排：</strong>拖拽 Start → Retrieval → LLM → Answer，快速上线朴素 RAG。</li>
-          <li><strong>质量分支：</strong>通过评分节点 + Conditional，实现 CRAG 式兜底。</li>
-          <li><strong>代理化：</strong>引入 Agent 节点，赋予工具箱，完成多跳推理与外部搜索。</li>
-        </ol>
-        <aside class="notes">
-          来自 context 第五部分 Dify 工作流的详解。
-          强调“零代码 + 可观测”让团队专注业务逻辑。
-        </aside>
-      </section>
+        <!-- 13. Dify platform capability -->
+        <section data-auto-animate>
+          <h2>Dify：一站式 LLM 应用开发平台</h2>
+          <ul>
+            <li class="fragment">提示词工程与上下文模板</li>
+            <li class="fragment">知识管道（父子文档、Rerank、评估）</li>
+            <li class="fragment">Agent 编排（工具链、记忆调用）</li>
+            <li class="fragment">全生命周期运营（日志、标注、分析、微调）</li>
+          </ul>
+          <aside class="notes">
+            1–2 分钟：快速总览组件，为实践落地做铺垫。
+          </aside>
+        </section>
 
-      <section>
-        <span class="section-tag">Open Ecosystem</span>
-        <h2><span class="brand-dify"><span class="dy">D</span><span class="if">if</span><span class="dy">y</span></span> 开源生态的加速器</h2>
-        <ul>
-          <li>开源社区持续维护的知识库连接器、检索适配器、评估模板。</li>
-          <li>与 Langfuse 等 LLMOps 工具协同，提供全链路观测与回放。</li>
-          <li>插件市场：Tavily、Milvus、OpenSearch、SQL 等工具即插即用。</li>
-          <li>企业级部署选项：自托管、混合云与 API，满足合规需求。</li>
-        </ul>
-        <aside class="notes">
-          展示 Dify 生态的价值，呼应“视觉风格 + 品牌”并告诉听众可以直接复用。
-        </aside>
-      </section>
+        <!-- 14. Evaluation & Metrics (added) -->
+        <section data-auto-animate>
+          <h2>评估与度量：让“记忆”可验证</h2>
+          <p class="punch">衡量，才有<strong>改进</strong>。</p>
+          <ul>
+            <li class="fragment">检索：召回质量、覆盖率、冗余度、语义完整性</li>
+            <li class="fragment">生成：真实性、相关性、可追溯性（来源引用）</li>
+            <li class="fragment">系统：延迟、成本、稳定性、吞吐</li>
+            <li class="fragment">流程：小 Gold Set + CI/看板；离线基线 + 线上 A/B</li>
+          </ul>
+          <aside class="notes">
+            2–3 分钟：强调“小而精”的金标集与自动化，减少盲调；度量先行。
+          </aside>
+        </section>
 
-      <section data-background-gradient="linear-gradient(135deg, #0f172a, #7f56d9)">
-        <h2>展望：上下文工程的下一站</h2>
-        <ul>
-          <li>评估自动化：构建面向事实性的持续集成，缩短上线反馈闭环。</li>
-          <li>延迟 vs. 质量：通过缓存、近线检索与动态路由在体验与成本间平衡。</li>
-          <li>多模态与结构化 RAG：接入图像、表格、知识图谱，扩展认知边界。</li>
-          <li>从工具到合作者：让代理具备上下文记忆与意图管理，真正成为业务伙伴。</li>
-        </ul>
-        <aside class="notes">
-          汇总 context 第七部分的未来展望，强调我们正在迈向多模态与更强的代理。
-          号召听众持续投资上下文工程。
-        </aside>
-      </section>
+        <!-- 15. Implementation checklist (added) -->
+        <section data-auto-animate>
+          <h2>落地清单（Checklist）</h2>
+          <ul>
+            <li class="fragment">数据治理：去噪、去重、边界标注与来源管理</li>
+            <li class="fragment">切分策略：标题/语义感知 + 父子结构</li>
+            <li class="fragment">检索链路：Milvus TopK → Rerank TopN</li>
+            <li class="fragment">上下文模板：引用、格式化、约束生成</li>
+            <li class="fragment">观测与告警：召回偏移、延迟异常、成本回归</li>
+          </ul>
+          <aside class="notes">
+            2 分钟：把方法论收敛为可执行步骤，帮助团队启动或优化项目。
+          </aside>
+        </section>
 
-      <section>
-        <h2>谢谢！欢迎继续交流</h2>
-        <p class="lead contact-lines">
-          <span>郑立 · <span class="brand-dify"><span class="dy">D</span><span class="if">if</span><span class="dy">y</span></span> 开源生态负责人</span>
-          <span>邮箱：community@dify.ai · GitHub：difyai/dify</span>
-        </p>
-        <div class="footer-note">扫描二维码加入社区（演讲现场附带）</div>
-        <aside class="notes">
-          结束语，邀请提问，给出联系渠道。
-          提醒现场会提供二维码资料。
-        </aside>
-      </section>
+        <!-- 16. Summary -->
+        <section data-auto-animate>
+          <h2>总结</h2>
+          <ul>
+            <li class="fragment">RAG 是谱系：从“静态状态”走向“动态记忆”</li>
+            <li class="fragment">知识管道决定上限：质量、复用与规模化</li>
+            <li class="fragment">Dify × Milvus：记忆构建 → 存储索引 → 使用编排</li>
+          </ul>
+          <aside class="notes">
+            1 分钟：回扣开头的三点要约，形成闭环。
+          </aside>
+        </section>
+
+        <!-- 17. Q&A / Contact -->
+        <section data-auto-animate>
+          <h2>Q&A</h2>
+          <p class="dim">感谢聆听 · 欢迎交流</p>
+          <p>郑立 · Dify 开源生态负责人</p>
+          <aside class="notes">
+            2–3 分钟：问答时间，收集反馈与场景需求。
+          </aside>
+        </section>
+      </div>
     </div>
-  </div>
 
-  <script src="https://cdn.jsdelivr.net/npm/reveal.js@5/dist/reveal.js"></script>
-  <script>
-    Reveal.initialize({
-      hash: true,
-      slideNumber: 'c/t',
-      transition: 'fade',
-      backgroundTransition: 'fade',
-      width: 1280,
-      height: 720
-    });
-  </script>
-</body>
-</html>
+    <script src="https://cdn.jsdelivr.net/npm/reveal.js@5/dist/reveal.js"></script>
+    <script src="https://cdn.jsdelivr.net/npm/reveal.js@5/plugin/notes/notes.js"></script>
+    <script>
+      Reveal.initialize({
+        hash: true,
+        width: 1920,
+        height: 1080,
+        margin: 0.04,
+        minScale: 0.5,
+        maxScale: 1.3,
+        slideNumber: 'c/t',
+        progress: true,
+        controls: true,
+        center: false,
+        transition: 'fade',
+        plugins: [ RevealNotes ],
+      });
+    </script>
+  </body>
+  </html>
