@@ -41,10 +41,9 @@
           <ul>
             <li>LLM 擅长“<strong>计算</strong>”，参数承载的是训练期的<strong>静态知识</strong>。</li>
             <li>RAG 本质：为 LLM 挂载<strong class="emph">外部、动态的记忆</strong>（Memory）。</li>
-            <li class="callout">行业观点：<span class="mono emph">RAG 是一个谱系</span>（Latent Space × Chroma）。</li>
+            <li class="callout">行业观点：<span class="mono emph">RAG 是一个谱系</span>。</li>
             <li>核心问题：如何<strong class="emph">构建—管理—使用</strong>这份“记忆”？</li>
           </ul>
-          <p class="meta">观点：<span class="emph">Don’t ship “RAG.” Ship retrieval.</span> 命名并运营检索原语（dense / lexical / filters / re‑rank / assembly / eval）。</p>
           <aside class="notes">
             目标：回答“为什么需要 RAG”——为 LLM 补上持续更新的外部记忆层。
             概念：计算（Compute）= 推理与生成；记忆（Memory）= 外部知识的构建/管理/使用。
@@ -62,7 +61,6 @@
             <li><span class="emph">Agentic RAG</span>：让“记忆”成为 Agent 的一部分</li>
             <li><span class="emph">Knowledge Pipeline</span>：高质量“记忆”的生产线</li>
           </ul>
-          <p class="meta">原语集合：dense、lexical/regex、filters、re‑rank、assembly、eval loop。</p>
           <aside class="notes">
             解释：
             - Naive RAG：最小可用检索增强，缺少质量与治理。
@@ -120,16 +118,14 @@
           </aside>
         </section>
 
-        <!-- Slide X: 对话张力 · 别交付 RAG，交付“检索” -->
         <section lang="zh-CN" class="scribble">
-          <h2>对话 · “别交付 <span class="emph">RAG</span>”，交付 <span class="emph">检索</span></h2>
+          <h2>“别交付 <span class="emph">RAG</span>”，交付 <span class="emph">检索</span></h2>
           <ul>
             <li><strong>挑战</strong>：把方案叫“RAG”会掩盖关键设计取舍。</li>
             <li class="callout"><strong>原语</strong>：dense、lexical/regex、filters、<span class="emph">re‑rank</span>、assembly、eval loop。</li>
             <li><strong>行动</strong>：先赢下第一阶段<span class="emph">混合召回</span>（<span class="emph">200–300</span> 候选也可）。</li>
             <li><strong>纪律</strong>：<span class="emph">始终先精排，再组装上下文</span>；尊重 <span class="emph">Context Rot</span>。</li>
           </ul>
-          <p class="meta">Latent Space × Chroma 访谈要点：命名并运营“检索”原语，避免空泛的 RAG 叙事。</p>
           <aside class="notes">
             观点：Don’t ship “RAG.” Ship retrieval（交付检索原语）。
             定义：原语包括向量召回、词法匹配、过滤、精排、上下文组装、评估闭环。
@@ -146,7 +142,6 @@
             <li><strong>策略</strong>：短期混用（Cross‑Encoder + LLM）；中期靠缓存/切分减少尾延迟。</li>
             <li><strong>远期</strong>：更廉价/更快的 LLM → <span class="emph">brute‑force</span> 信息整理变得可行。</li>
           </ul>
-          <p class="meta">访谈观点转译：性能/成本/质量三角拉扯下的工程折中。</p>
           <aside class="notes">
             定义：Re‑rank（精排）对候选进行相关性排序；尾延迟（Tail Latency）指大规模并发中最慢请求导致的整体等待。
             策略：阶段性采用交叉编码器；针对热门查询/中间结果做缓存；控制候选池与并发度。
